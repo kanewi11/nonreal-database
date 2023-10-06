@@ -1,12 +1,11 @@
-import sys
-
-
 class Database:
     NOT_FOUND = 'NULL'
+
 
     def __init__(self):
         self.__data = {}
         self.__transactions = []
+        self.__connection = True
 
     def set(self, key, value):
         if self.__transactions:
@@ -60,11 +59,20 @@ class Database:
                 self.__data.update(transaction)
             self.__transactions = []
 
+    def end(self):
+        self.__connection = False
+
+    def connection(self):
+        return self.__connection
+
     def query(self, query_):
         if not query_:
             return
+
         if query_ == 'END':
-            sys.exit()
+            self.end()
+            return
+
 
         tokens = query_.split()
         command = tokens[0]
@@ -72,6 +80,14 @@ class Database:
         if command == 'SET' and len(tokens) == 3:
             key, value = tokens[1], tokens[2]
             self.set(key, value)
+        elif command == 'BEGIN':
+            self.begin()
+        elif command == 'ROLLBACK':
+            self.rollback()
+        elif command == 'COMMIT':
+            self.commit()
+        elif len(tokens) != 2:
+            return 'Missing an argument'
         elif command == 'GET':
             key = tokens[1]
             return self.get(key)
@@ -84,20 +100,16 @@ class Database:
         elif command == 'FIND':
             value = tokens[1]
             return ' | '.join(self.find(value))
-        elif command == 'BEGIN':
-            self.begin()
-        elif command == 'ROLLBACK':
-            self.rollback()
-        elif command == 'COMMIT':
-            self.commit()
-        else:
-            return 'Incorrect query: ' + query_
+        return 'Incorrect query: ' + query_
 
 
 def main():
     db = Database()
 
     while True:
+        if not db.connection():
+            break
+
         query = raw_input().strip()
         data = db.query(query)
         if data is not None:
@@ -107,8 +119,8 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-    except (EOFError, KeyboardInterrupt):
-        pass
+    except EOFError:
+        print 'Exiting...'
     except Exception as error:
         print str(error)
         raw_input('Press Enter to exit...')
