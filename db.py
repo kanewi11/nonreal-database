@@ -1,9 +1,11 @@
+import sys
+
+
 class Database:
     NOT_FOUND = 'NULL'
 
-    __data = {}
-
     def __init__(self):
+        self.__data = {}
         self.__transactions = []
 
     def set(self, key, value):
@@ -31,9 +33,9 @@ class Database:
         count = 0
         if self.__transactions:
             for transaction in reversed(self.__transactions):
-                count += list(transaction.values()).count(value)
+                count += transaction.values().count(value)
         else:
-            count += list(self.__data.values()).count(value)
+            count += self.__data.values().count(value)
         return count
 
     def find(self, value):
@@ -58,43 +60,48 @@ class Database:
                 self.__data.update(transaction)
             self.__transactions = []
 
+    def query(self, query_):
+        if not query_:
+            return
+        if query_ == 'END':
+            sys.exit()
+
+        tokens = query_.split()
+        command = tokens[0]
+
+        if command == 'SET' and len(tokens) == 3:
+            key, value = tokens[1], tokens[2]
+            self.set(key, value)
+        elif command == 'GET':
+            key = tokens[1]
+            return self.get(key)
+        elif command == 'UNSET':
+            key = tokens[1]
+            self.unset(key)
+        elif command == 'COUNTS':
+            value = tokens[1]
+            return self.counts(value)
+        elif command == 'FIND':
+            value = tokens[1]
+            return ' | '.join(self.find(value))
+        elif command == 'BEGIN':
+            self.begin()
+        elif command == 'ROLLBACK':
+            self.rollback()
+        elif command == 'COMMIT':
+            self.commit()
+        else:
+            return 'Incorrect query: ' + query_
+
 
 def main():
     db = Database()
 
     while True:
-        command = input().strip()
-        if not command:
-            continue
-        if command == 'END':
-            break
-
-        tokens = command.split()
-        cmd = tokens[0]
-
-        if cmd == 'SET' and len(tokens) == 3:
-            key, value = tokens[1], tokens[2]
-            db.set(key, value)
-        elif cmd == 'GET':
-            key = tokens[1]
-            print(db.get(key))
-        elif cmd == 'UNSET':
-            key = tokens[1]
-            db.unset(key)
-        elif cmd == 'COUNTS':
-            value = tokens[1]
-            print(db.counts(value))
-        elif cmd == 'FIND':
-            value = tokens[1]
-            print(' | '.join(db.find(value)))
-        elif cmd == 'BEGIN':
-            db.begin()
-        elif cmd == 'ROLLBACK':
-            db.rollback()
-        elif cmd == 'COMMIT':
-            db.commit()
-        else:
-            print('Некорректная команда:', cmd)
+        query = raw_input().strip()
+        data = db.query(query)
+        if data is not None:
+            print data
 
 
 if __name__ == '__main__':
@@ -102,3 +109,6 @@ if __name__ == '__main__':
         main()
     except (EOFError, KeyboardInterrupt):
         pass
+    except Exception as error:
+        print str(error)
+        raw_input('Press Enter to exit...')
