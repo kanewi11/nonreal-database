@@ -73,7 +73,6 @@ class Database:
             self.end()
             return
 
-
         tokens = query_.split()
         command = tokens[0]
 
@@ -107,11 +106,10 @@ def main():
     db = Database()
 
     while True:
-        if not db.connection():
-            break
-
         query = raw_input().strip()
         data = db.query(query)
+        if not db.connection():
+            break
         if data is not None:
             print data
 
