@@ -99,7 +99,8 @@ class Database:
         elif command == 'FIND':
             value = tokens[1]
             return ' | '.join(self.find(value))
-        return 'Incorrect query: ' + query_
+        else:
+            return 'Incorrect query: ' + query_
 
 
 def main():
