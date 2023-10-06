@@ -68,8 +68,7 @@ class Database:
     def query(self, query_):
         if not query_:
             return
-
-        if query_ == 'END':
+        elif query_ == 'END':
             self.end()
             return
 
