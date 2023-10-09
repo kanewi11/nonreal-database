@@ -1,7 +1,6 @@
 class Database:
     NOT_FOUND = 'NULL'
 
-
     def __init__(self):
         self.__data = {}
         self.__transactions = []
@@ -18,33 +17,49 @@ class Database:
         if self.__transactions:
             for transaction in reversed(self.__transactions):
                 if key in transaction:
-                    return transaction[key]
+                    return transaction[key] or self.NOT_FOUND
         return self.__data.get(key, self.NOT_FOUND)
 
     def unset(self, key):
         if self.__transactions:
             current_transaction = self.__transactions[-1]
-            current_transaction.pop(key, None)
+            current_transaction[key] = None
         else:
             self.__data.pop(key, None)
 
     def counts(self, value):
         count = 0
+        found_keys = set()
+
         if self.__transactions:
             for transaction in reversed(self.__transactions):
-                count += transaction.values().count(value)
-        else:
-            count += self.__data.values().count(value)
+                for key, transaction_value in transaction.items():
+                    if transaction_value is None:
+                        found_keys.add(key)
+                    elif key not in found_keys and transaction_value == value:
+                        count += 1
+                        found_keys.add(key)
+
+        for key, data_value in self.__data:
+            if key not in found_keys and data_value == value:
+                count += 1
         return count
 
     def find(self, value):
-        found = []
+        found = set()
+        unset_keys = set()
         if self.__transactions:
             for transaction in reversed(self.__transactions):
-                found += [key for key, val in transaction.items() if val == value]
-        else:
-            found += [key for key, val in self.__data.items() if val == value]
-        return found
+                for key, transaction_value in transaction.items():
+                    if transaction_value is None:
+                        unset_keys.add(key)
+                    elif transaction_value == value:
+                        found.add(key)
+
+        for key, data_value in self.__data.items():
+            if data_value == value and key not in unset_keys:
+                found.add(key)
+        return list(found)
 
     def begin(self):
         self.__transactions.append({})
@@ -58,6 +73,10 @@ class Database:
             for transaction in self.__transactions:
                 self.__data.update(transaction)
             self.__transactions = []
+
+        for key, value in self.__data.items():
+            if value is None:
+                self.__data.pop(key, None)
 
     def end(self):
         self.__connection = False
