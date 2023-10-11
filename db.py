@@ -40,7 +40,7 @@ class Database:
                         count += 1
                         found_keys.add(key)
 
-        for key, data_value in self.__data:
+        for key, data_value in self.__data.items():
             if key not in found_keys and data_value == value:
                 count += 1
         return count
